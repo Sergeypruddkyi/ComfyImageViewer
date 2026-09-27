@@ -1,0 +1,11 @@
+[
+  { "name": "SD 1.5", "patterns": ["sd15", "sd1.5", "sd_1.5", "v1-5", "sd 1.5"] },
+  { "name": "SDXL", "patterns": ["sdxl", "sd_xl", "xl_base"] },
+  { "name": "Flux 1", "patterns": ["flux1", "flux_1", "flux.1"] },
+  { "name": "Flux 2 Klein", "patterns": ["klein", "flux2_klein", "flux2-klein"] },
+  { "name": "Qwen", "patterns": ["qwen"] },
+  { "name": "Krea 2", "patterns": ["krea2", "krea_2", "kreamania", "kreax2"] },
+  { "name": "Wan", "patterns": ["wan"] },
+  { "name": "LTX", "patterns": ["ltx"] },
+  { "name": "MiniMax H3", "patterns": ["minimax"] }
+]

@@ -1,0 +1,24 @@
+bin/
+obj/
+.vs/
+.wt/
+.agent/
+*.user
+*.suo
+
+# Local-only working artifacts (never published; sources and docs/images are unaffected)
+/publish/
+/portable-release/
+/_rollback/
+/images/
+/.agents/
+AGENTS.md
+*_HANDOFF.md
+
+publish/ComfyImageViewer.exe
+
+_tools/
+
+.git_old_backup/
+
+.kilo/worktrees/

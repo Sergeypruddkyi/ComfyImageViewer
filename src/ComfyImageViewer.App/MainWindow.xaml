@@ -1,0 +1,374 @@
+<Window x:Class="ComfyImageViewer.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:ComfyImageViewer.App.ViewModels"
+        xmlns:converters="clr-namespace:ComfyImageViewer.App.Converters"
+        xmlns:controls="clr-namespace:ComfyImageViewer.App.Controls"
+        xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+        Title="ComfyImageViewer" Height="700" Width="1280"
+        Icon="pack://application:,,,/Assets/AppIcon.ico"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Bg.Window}"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        Foreground="{DynamicResource Text.Primary}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360" MinWidth="300"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="*" MinWidth="300"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="300" MinWidth="240"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT: Navigation + Image List (одобренная часть, без изменений) -->
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Navigation: две текстовые кнопки; путь текущей папки — отдельной строкой под ними -->
+            <Grid Grid.Row="0" Margin="8,8,8,4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <Button Content="Открыть папку"
+                            Command="{Binding SelectFolderCommand}" ToolTip="Открыть папку"
+                            Height="32" VerticalContentAlignment="Center"
+                            Background="{DynamicResource Bg.Card}" BorderThickness="0"/>
+                    <Button Content="Назад"
+                            Command="{Binding GoUpCommand}" ToolTip="Назад"
+                            Height="32" VerticalContentAlignment="Center"
+                            Background="{DynamicResource Bg.Card}" BorderThickness="0" Margin="4,0,0,0"/>
+                    <!-- Поиск: нейтральное состояние «Поиск» + выбор режима; «По модели» →
+                         сразу список семейств из ModelFamilies.json (drill-down, «← Поиск» — возврат),
+                         «По дате» → дочерний уровень «← Поиск» + календарь (диапазон мышью, автопоиск) -->
+                    <TextBlock Text="&#xE721;"
+                               FontFamily="{DynamicResource Icon.Font}"
+                               FontSize="14"
+                               Foreground="{DynamicResource Text.Secondary}"
+                               VerticalAlignment="Center"
+                               Margin="10,0,4,0"/>
+                    <ComboBox Width="132"
+                              Height="32"
+                              ItemsSource="{Binding SearchOptions}"
+                              SelectedItem="{Binding SelectedFamily}"
+                               PreviewMouseLeftButtonUp="OnSearchComboPreviewItemMouseUp"
+                               MaxDropDownHeight="420">
+
+                        <!-- Строка пункта: имя семейства + иконка корзины.
+                             Корзина видна лишь в dropdown (Popup-предок) и только у семейств:
+                             сервисные пункты и строка поля ComboBox её скрывают. -->
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Name}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <Button Grid.Column="1"
+                                            Click="OnFamilyTrashClick"
+                                            ToolTip="Удалить семейство"
+                                            Width="18" Height="18"
+                                            Padding="0" Margin="4,0,0,0"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Focusable="False"
+                                            VerticalAlignment="Center">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Text.Secondary}"/>
+                                                <Style.Triggers>
+                                                    <!-- Нет Popup-предка = строка поля ComboBox (SelectionBoxItem) -->
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Popup}}"
+                                                                 Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <!-- Сервисные пункты без корзины -->
+                                                    <DataTrigger Binding="{Binding}" Value="{x:Static vm:MainViewModel.NeutralSearch}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding}" Value="{x:Static vm:MainViewModel.BackToSearch}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding}" Value="{x:Static vm:MainViewModel.ModelSearchMode}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding}" Value="{x:Static vm:MainViewModel.DateSearchMode}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding}" Value="{x:Static vm:MainViewModel.DateCalendarEntry}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding}" Value="{x:Static vm:MainViewModel.AddFamilyEntry}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <TextBlock Text="&#xE74D;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="12"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Center"/>
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+
+                        <ComboBox.ItemContainerStyle>
+                            <Style TargetType="ComboBoxItem">
+                                <Style.Triggers>
+                                    <!-- Нейтральный пункт в dropdown подписывается так же, как
+                                         возврат с уровня семейств («← Поиск»), но это другой
+                                         пункт. Меняется только ContentTemplate СТРОКИ: поле
+                                         ComboBox рендерит SelectionBoxItem своим шаблоном и
+                                         в нейтральном состоянии продолжает показывать «Поиск». -->
+                                    <DataTrigger Binding="{Binding}"
+                                                 Value="{x:Static vm:MainViewModel.NeutralSearch}">
+                                        <Setter Property="ContentTemplate">
+                                            <Setter.Value>
+                                                <DataTemplate>
+                                                    <TextBlock Text="← Поиск"/>
+                                                </DataTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                    <!-- Дочерний уровень «По дате»: сервисный пункт рендерится
+                                         компактным календарём (выбор мышью, SingleRange:
+                                         клик — день, второй клик — диапазон; поиск автоматический). -->
+                                    <DataTrigger Binding="{Binding}"
+                                                 Value="{x:Static vm:MainViewModel.DateCalendarEntry}">
+                                        <Setter Property="ContentTemplate">
+                                            <Setter.Value>
+                                                <DataTemplate>
+                                                    <!-- DataContext = VM (тот же путь, что у рабочих
+                                                         триггеров внутри popup): визуальный подъём
+                                                         от календаря до ComboBox не пересекает границу popup -->
+                                                    <controls:DateRangeCalendar Margin="4,2"
+                                                                                Style="{DynamicResource Calendar.Dark}"
+                                                                                DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ComboBox}}"/>
+                                                </DataTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                    <!-- «По дате» на своём дочернем уровне — сервисная строка,
+                                         чтобы SelectedItem пережил смену ItemsSource; скрыта. -->
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding}"
+                                                       Value="{x:Static vm:MainViewModel.DateSearchMode}"/>
+                                            <Condition Binding="{Binding DataContext.DateModeRowIsHiddenServiceEntry,
+                                                         RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                       Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </MultiDataTrigger>
+                                    <!-- Скрытый сервисный пункт: «По модели» обязан присутствовать
+                                         в списке семейств, иначе WPF сбрасывает SelectedItem при смене
+                                         ItemsSource и ComboBox становится пустым. Схлопнута строка ТОЛЬКО
+                                         на уровне семейств (ModelRowIsHiddenServiceEntry); на верхнем
+                                         уровне это обычный видимый пункт. -->
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding}"
+                                                       Value="{x:Static vm:MainViewModel.ModelSearchMode}"/>
+                                            <Condition Binding="{Binding DataContext.ModelRowIsHiddenServiceEntry,
+                                                         RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                       Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.ItemContainerStyle>
+                    </ComboBox>
+                </StackPanel>
+                <TextBlock Grid.Row="1"
+                           Text="{Binding CurrentDirectoryText}"
+                           Margin="0,6,0,0"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource Text.Secondary}"
+                           ToolTip="{Binding CurrentDirectoryText}"/>
+            </Grid>
+
+            <!-- Файловый список текущей директории: папки, затем PNG -->
+            <ListBox Grid.Row="1"
+                     ItemsSource="{Binding ImageList.Images}"
+                     SelectedItem="{Binding ImageList.SelectedItem}"
+                     MouseDoubleClick="OnListMouseDoubleClick"
+                     VirtualizingStackPanel.IsVirtualizing="True"
+                     VirtualizingStackPanel.VirtualizationMode="Recycling"
+                     ScrollViewer.CanContentScroll="True"
+                     BorderThickness="1"
+                     Margin="8,0,8,8">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <!-- Плотная строка: вертикальный отступ только в ListBoxItem (Padding=2, Margin=4,1) -->
+                        <StackPanel Orientation="Horizontal" Margin="4,0">
+                            <Grid Width="48" Height="48">
+                                <Image Source="{Binding Thumbnail}"
+                                       Width="48" Height="48"
+                                       Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                       Visibility="{Binding IsImage, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="&#xE8B7;"
+                                           FontFamily="{DynamicResource Icon.Font}"
+                                           FontSize="28"
+                                           Foreground="{DynamicResource Accent}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Visibility="{Binding IsFolder, Converter={StaticResource BoolToVis}}"/>
+                            </Grid>
+                            <TextBlock Text="{Binding Name}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Name}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <!-- Splitter: left / center -->
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch" Background="{DynamicResource Border.Subtle}"/>
+
+        <!-- CENTER: Preview (основная область) -->
+        <Border Grid.Column="2" Margin="8,8,4,8" Background="{DynamicResource Bg.Card}" CornerRadius="8">
+            <Grid>
+                <Image Source="{Binding ImageDetail.PreviewImage}"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="{Binding ImageDetail.PreviewErrorText}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Margin="16,0"
+                           Foreground="{DynamicResource Text.Secondary}"/>
+            </Grid>
+        </Border>
+
+        <!-- Splitter: center / right -->
+        <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch" Background="{DynamicResource Border.Subtle}"/>
+
+        <!-- RIGHT: Metadata (ComfyUI либо ordinary image path) -->
+        <Border Grid.Column="4" Margin="4,8,8,8" Background="{DynamicResource Bg.Surface}"
+                BorderBrush="{DynamicResource Border.Subtle}" BorderThickness="1" CornerRadius="8" Padding="12,8">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- COMFYUI PATH: Date / Model / Prompt (существующее поведение) -->
+                    <StackPanel Visibility="{Binding ImageDetail.IsComfyMetadata, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="Date/time:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding ImageDetail.DateText}" FontSize="14" Foreground="{DynamicResource Text.Primary}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Model:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding ImageDetail.ModelText}" FontSize="14" Foreground="{DynamicResource Text.Primary}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Prompt:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"/>
+                        <!-- ClipToBounds + LineHeight: collapsed-блок клипуется ровно по границе строки
+                             (7 × 19px), кнопка стоит после области текста, не перекрывая её.
+                             Expanded: MaxHeight = ∞ — внешний ScrollViewer скроллит весь текст. -->
+                        <TextBlock Text="{Binding ImageDetail.PromptText}"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource Text.Primary}"
+                                   TextWrapping="Wrap"
+                                   LineHeight="19"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   ClipToBounds="True">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="MaxHeight" Value="133"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ImageDetail.IsMetadataExpanded}" Value="True">
+                                            <Setter Property="MaxHeight" Value="{x:Static sys:Double.PositiveInfinity}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- ORDINARY IMAGE PATH: базовые сведения файла и изображения -->
+                    <StackPanel Visibility="{Binding ImageDetail.IsComfyMetadata, Converter={StaticResource InverseBoolToVis}}">
+                        <TextBlock Text="File:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding ImageDetail.FileNameText}" FontSize="14" Foreground="{DynamicResource Text.Primary}" Margin="0,0,0,12" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding ImageDetail.FileNameText}"/>
+
+                        <TextBlock Text="Date/time:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding ImageDetail.DateText}" FontSize="14" Foreground="{DynamicResource Text.Primary}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Size:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding ImageDetail.SizeText}" FontSize="14" Foreground="{DynamicResource Text.Primary}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Dimensions:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding ImageDetail.DimensionsText}" FontSize="14" Foreground="{DynamicResource Text.Primary}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Location:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"
+                                   Visibility="{Binding ImageDetail.HasLocation, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Text="{Binding ImageDetail.LocationText}" FontSize="14" Foreground="{DynamicResource Text.Primary}" Margin="0,0,0,12" TextWrapping="Wrap"
+                                   Visibility="{Binding ImageDetail.HasLocation, Converter={StaticResource BoolToVis}}"/>
+
+                        <TextBlock Text="Additional metadata:" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Text.Secondary}" Margin="0,0,0,4"
+                                   Visibility="{Binding ImageDetail.HasAdditionalMetadata, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock FontSize="14"
+                                   Foreground="{DynamicResource Text.Primary}"
+                                   TextWrapping="Wrap"
+                                   LineHeight="19"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   ClipToBounds="True"
+                                   Margin="0,0,0,12"
+                                   Visibility="{Binding ImageDetail.HasAdditionalMetadata, Converter={StaticResource BoolToVis}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding ImageDetail.AdditionalMetadataText}"/>
+                                    <Setter Property="MaxHeight" Value="133"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ImageDetail.IsMetadataExpanded}" Value="True">
+                                            <Setter Property="Text" Value="{Binding ImageDetail.AdditionalMetadataFullText}"/>
+                                            <Setter Property="MaxHeight" Value="{x:Static sys:Double.PositiveInfinity}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- «Открыть всё»: обычная кнопка приложения, разворот длинного текста metadata (только просмотр) -->
+                    <Button Command="{Binding ImageDetail.ToggleMetadataExpandedCommand}"
+                            HorizontalAlignment="Left"
+                            Margin="0,8,0,4"
+                            Visibility="{Binding ImageDetail.HasExpandableContent, Converter={StaticResource BoolToVis}}">
+                        <TextBlock>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Открыть всё"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ImageDetail.IsMetadataExpanded}" Value="True">
+                                            <Setter Property="Text" Value="Свернуть"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Button>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>

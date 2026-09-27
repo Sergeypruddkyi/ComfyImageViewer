@@ -1,0 +1,40 @@
+<Window x:Class="ComfyImageViewer.App.ConfirmDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Удаление семейства"
+        Width="380"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Bg.Window}"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        FontSize="14"
+        Foreground="{DynamicResource Text.Primary}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   x:Name="MessageText"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,16"
+                   Foreground="{DynamicResource Text.Primary}"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <!-- IsDefault: Enter = подтверждение удаления. -->
+            <Button Content="Удалить"
+                    IsDefault="True"
+                    MinWidth="96" Height="32"
+                    Click="OnConfirmClick"/>
+            <!-- IsCancel: Esc и кнопка заголовка (X) = отмена, ничего не удаляется. -->
+            <Button Content="Отмена"
+                    IsCancel="True"
+                    MinWidth="96" Height="32"
+                    Margin="8,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

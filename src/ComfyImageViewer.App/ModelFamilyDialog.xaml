@@ -1,0 +1,100 @@
+<Window x:Class="ComfyImageViewer.App.ModelFamilyDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Семейство"
+        Width="470"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Bg.Window}"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        FontSize="14"
+        Foreground="{DynamicResource Text.Primary}">
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource Bg.Card}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Text.Primary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource Text.Primary}"/>
+            <Setter Property="SelectionBrush" Value="{DynamicResource Accent}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Border.Strong}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Название:"
+                   FontSize="12"
+                   Foreground="{DynamicResource Text.Secondary}"
+                   Margin="0,0,0,4"/>
+        <TextBox x:Name="NameBox" Grid.Row="1" Margin="0,0,0,12"/>
+
+        <TextBlock Grid.Row="2"
+                   Text="Поисковые шаблоны:"
+                   FontSize="12"
+                   Foreground="{DynamicResource Text.Secondary}"
+                   Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="3"
+                   Text="Через запятую, например: qwen_image_2.1, qwen2_1, qwen 2.1"
+                   FontSize="12"
+                   Foreground="{DynamicResource Text.Secondary}"
+                   Margin="0,0,0,4"/>
+        <TextBox x:Name="PatternsBox" Grid.Row="4" Margin="0,0,0,8"/>
+
+        <TextBlock x:Name="ErrorText"
+                   Grid.Row="5"
+                   FontSize="12"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"
+                   Visibility="Collapsed"
+                   Foreground="#FF8A8A"/>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Отмена" IsCancel="True" MinWidth="96" Height="32"/>
+            <Button Content="Сохранить"
+                    IsDefault="True"
+                    MinWidth="96"
+                    Height="32"
+                    Margin="8,0,0,0"
+                    Click="OnSaveClick"/>
+        </StackPanel>
+    </Grid>
+</Window>

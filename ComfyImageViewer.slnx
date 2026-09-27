@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ComfyImageViewer.App/ComfyImageViewer.App.csproj" />
+    <Project Path="src/ComfyImageViewer.Core/ComfyImageViewer.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ComfyImageViewer.Core.Tests/ComfyImageViewer.Core.Tests.csproj" />
+  </Folder>
+</Solution>

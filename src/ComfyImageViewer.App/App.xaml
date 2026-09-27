@@ -1,0 +1,17 @@
+<Application x:Class="ComfyImageViewer.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- TASK-04B: тёмная тема (палитра + implicit-стили контролов) -->
+                <ResourceDictionary Source="Themes/DarkTheme.xaml"/>
+                <!-- Тёмный стиль календаря «По дате»: implicit-стили внутренних частей
+                     (CalendarItem/CalendarDayButton/CalendarButton) обязаны быть на
+                     application-уровне — WPF ищет implicit-стиль для элементов внутри
+                     ControlTemplate только от ресурсов шаблона до App, пропуская Window -->
+                <ResourceDictionary Source="Themes/Calendar.Dark.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
