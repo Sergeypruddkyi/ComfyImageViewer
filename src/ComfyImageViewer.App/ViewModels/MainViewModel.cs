@@ -373,8 +373,7 @@ public sealed class MainViewModel : ViewModelBase
             Title = "Выберите корневую папку архива",
         };
 
-        if (!string.IsNullOrEmpty(CurrentPath))
-            dialog.InitialDirectory = CurrentPath;
+        dialog.InitialDirectory = GetSafeInitialDirectory();
 
         if (dialog.ShowDialog() == true)
         {
@@ -383,6 +382,76 @@ public sealed class MainViewModel : ViewModelBase
             CurrentPath = dialog.FolderName;
             _settingsService.RootPath = dialog.FolderName;
         }
+    }
+
+    // Выбор безопасной стартовой папки для Folder Picker.
+    // Сохранённый/текущий путь может быть недоступной сетевой папкой (UNC/SMB) —
+    // нельзя ни падать, ни закрывать приложение, ни сканировать содержимое.
+    // В качестве стартовой папки используется:
+    //   - существующий локальный путь как есть;
+    //   - доступный сетевой путь как есть;
+    //   - иначе — безопасная локальная папка (профиль пользователя или системный диск).
+    private string GetSafeInitialDirectory()
+    {
+        var candidate = CurrentPath;
+        if (!string.IsNullOrEmpty(candidate))
+        {
+            if (TryGetExistingDirectory(candidate, out var existing))
+                return existing;
+        }
+
+        // Сетевой путь недоступен или путь не существует — открываемся в безопасной локальной папке.
+        return SafeLocalFallback();
+    }
+
+    private static bool TryGetExistingDirectory(string path, out string result)
+    {
+        result = path;
+        try
+        {
+            return Directory.Exists(path);
+        }
+        catch (Exception ex) when (
+            ex is IOException
+            || ex is UnauthorizedAccessException
+            || ex is System.Security.SecurityException
+            || ex is NotSupportedException
+            || ex is ArgumentException)
+        {
+            // Недоступный share, отсутствующий сервер, таймаут и т. п. — не роняем приложение.
+            result = string.Empty;
+            return false;
+        }
+    }
+
+    private static string SafeLocalFallback()
+    {
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (!string.IsNullOrEmpty(userProfile))
+        {
+            try
+            {
+                if (Directory.Exists(userProfile))
+                    return userProfile;
+            }
+            catch
+            {
+                // ignore, идём дальше
+            }
+        }
+
+        try
+        {
+            var drive = Path.GetPathRoot(Environment.SystemDirectory);
+            if (!string.IsNullOrEmpty(drive) && Directory.Exists(drive))
+                return drive;
+        }
+        catch
+        {
+            // ignore
+        }
+
+        return string.Empty;
     }
 
     private void GoUp(object? parameter)
